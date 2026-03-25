@@ -1,0 +1,76 @@
+name: code-review-env
+description: >
+  A real-world AI agent training environment for automated code review.
+  Agents must detect bugs, classify issue types, and propose fixes for
+  Python code snippets — mirroring the daily workflow of software engineers.
+version: "1.0.0"
+author: "Team CodeReview"
+license: MIT
+
+tasks:
+  - id: bug_detection
+    name: Bug Detection
+    difficulty: easy
+    description: Determine whether a Python code snippet contains a bug.
+    max_steps: 3
+    action_schema:
+      response:
+        type: string
+        enum: ["yes", "no"]
+      task_id:
+        type: string
+
+  - id: bug_classification
+    name: Bug Classification
+    difficulty: medium
+    description: Classify the type of bug present in a Python code snippet.
+    max_steps: 5
+    action_schema:
+      response:
+        type: string
+        enum:
+          - syntax_error
+          - logic_error
+          - null_reference
+          - security_flaw
+          - performance_issue
+      task_id:
+        type: string
+
+  - id: code_fix
+    name: Code Fix
+    difficulty: hard
+    description: Provide corrected Python code that fixes the identified bug.
+    max_steps: 8
+    action_schema:
+      response:
+        type: string
+        description: The corrected Python code.
+      task_id:
+        type: string
+
+action_space:
+  type: object
+  properties:
+    response:
+      type: string
+      description: The agent's response (yes/no, bug category, or corrected code).
+    task_id:
+      type: string
+      description: Identifier for the current task.
+
+observation_space:
+  type: object
+  properties:
+    code_snippet:
+      type: string
+      description: The Python code snippet to review.
+    task_id:
+      type: string
+      description: Current task identifier.
+    context:
+      type: string
+      description: Instructions or context for the current step.
+    step_number:
+      type: integer
+      description: Current step number within the episode.
