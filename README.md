@@ -1,7 +1,6 @@
 # CodeReviewEnv: A Structured Environment for Training Autonomous Code Review Agents
 
 **Meta × Scaler OpenEnv Hackathon Submission**
-Vittal Mukunda · 2026
 
 ---
 
