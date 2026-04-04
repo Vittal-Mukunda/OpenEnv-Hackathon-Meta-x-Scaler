@@ -1,3 +1,12 @@
+---
+title: OpenRnv
+emoji: 🚀
+colorFrom: blue
+colorTo: purple
+sdk: docker
+app_port: 7860
+---
+
 <h1 align="center">SchedulingOptEnv</h1>
 <h3 align="center">A Markov Decision Environment for Training Autonomous<br>Scheduling Optimisation Agents</h3>
 
