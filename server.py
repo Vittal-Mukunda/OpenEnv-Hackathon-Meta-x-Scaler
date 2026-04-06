@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -63,18 +63,20 @@ def health() -> dict[str, str]:
 
 
 @app.post("/reset", response_model=Observation)
-def reset(req: ResetRequest) -> Observation:
+def reset(req: Optional[ResetRequest] = None) -> Observation:
     """Reset the environment and start a new episode.
 
-    Body: {"task_id": "feasibility_check" | "conflict_classification" | "schedule_repair"}
+    Body (optional): {"task_id": "feasibility_check" | "conflict_classification" | "schedule_repair"}
+    If no body is provided, defaults to "feasibility_check".
     """
+    task_id = req.task_id if req else "feasibility_check"
     valid_tasks = {"feasibility_check", "conflict_classification", "schedule_repair"}
-    if req.task_id not in valid_tasks:
+    if task_id not in valid_tasks:
         raise HTTPException(
             status_code=400,
             detail=f"Invalid task_id. Choose from: {sorted(valid_tasks)}",
         )
-    return env.reset(task_id=req.task_id)
+    return env.reset(task_id=task_id)
 
 
 @app.post("/step", response_model=StepResponse)
