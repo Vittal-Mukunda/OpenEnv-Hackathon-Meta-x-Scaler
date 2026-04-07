@@ -33,9 +33,9 @@ from models import Action
 # Configuration
 # ---------------------------------------------------------------------------
 
-API_BASE_URL: str = os.getenv("API_BASE_URL") or "https://router.huggingface.co/v1"
-MODEL_NAME: str = os.getenv("MODEL_NAME") or "gpt-4o-mini"
-HF_TOKEN: str = os.getenv("HF_TOKEN") or os.getenv("API_KEY") or ""
+API_BASE_URL: str = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
+MODEL_NAME: str = os.getenv("MODEL_NAME", "gpt-4o-mini")
+HF_TOKEN: str = os.getenv("HF_TOKEN")
 BENCHMARK: str = "scheduling-opt-env"
 SUCCESS_THRESHOLD: float = 0.95
 
@@ -208,15 +208,15 @@ def run_episode(
             if done:
                 break
 
-        final_reward = rewards[-1] if rewards else 0.0
-        score = min(max(final_reward, 0.0), 1.0)
+        final_reward = rewards[-1] if rewards else 0.01
+        score = min(max(final_reward, 0.01), 0.99)
         success = score >= SUCCESS_THRESHOLD
 
     except Exception as exc:
         print(f"[DEBUG] Episode error: {exc}", file=sys.stderr, flush=True)
         if not rewards:
-            rewards = [0.0]
-        score = 0.0
+            rewards = [0.01]
+        score = 0.01
 
     finally:
         log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
