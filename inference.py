@@ -6,15 +6,12 @@ Emits exactly three line types per episode:
     [END]   success=<true|false> steps=<n> score=<0.000> rewards=<r1,r2,...,rn>
 
 Required environment variables:
-    API_BASE_URL  — Base URL for the OpenAI-compatible API endpoint
+    API_BASE_URL  — Base URL for the OpenAI-compatible LiteLLM proxy endpoint
+    API_KEY       — API key injected by the contest validator
     MODEL_NAME    — Model identifier to use for inference
-    HF_TOKEN      — Your Hugging Face / API key
 
-Usage (oracle mock — no API key needed):
-    python inference.py
-
-Usage (real LLM):
-    API_BASE_URL=https://api.openai.com/v1 MODEL_NAME=gpt-4o-mini HF_TOKEN=sk-... python inference.py
+Usage:
+    API_BASE_URL=<proxy_url> API_KEY=<key> MODEL_NAME=gpt-4o-mini python inference.py
 """
 
 from __future__ import annotations
@@ -33,18 +30,13 @@ from models import Action
 # Configuration
 # ---------------------------------------------------------------------------
 
-API_BASE_URL: str = os.getenv("API_BASE_URL") or "https://router.huggingface.co/v1"
-MODEL_NAME: str = os.getenv("MODEL_NAME") or "gpt-4o-mini"
-HF_TOKEN: str = os.getenv("HF_TOKEN") or os.getenv("API_KEY") or ""
+API_BASE_URL: str = os.environ["API_BASE_URL"]
+MODEL_NAME: str = os.getenv("MODEL_NAME", "gpt-4o-mini")
+API_KEY: str = os.environ["API_KEY"]
 BENCHMARK: str = "scheduling-opt-env"
 SUCCESS_THRESHOLD: float = 0.95
 
-USE_LLM: bool = bool(HF_TOKEN)
-
-if not USE_LLM:
-    print("[WARN] HF_TOKEN not set — using oracle mock responses.", file=sys.stderr, flush=True)
-
-client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN or "no-key")
+client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
 
 # ---------------------------------------------------------------------------
 # Structured log helpers (exact required format)
@@ -97,38 +89,11 @@ def _llm(system: str, user: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Oracle mock responses (used when HF_TOKEN is absent)
-# ---------------------------------------------------------------------------
-
-_MOCK_FEASIBILITY: dict[int, str] = {
-    0: "infeasible", 1: "infeasible", 2: "infeasible", 3: "infeasible",
-    4: "infeasible", 5: "infeasible", 6: "infeasible", 7: "infeasible",
-    8: "infeasible", 9: "infeasible", 10: "feasible",  11: "feasible",
-}
-
-_MOCK_CLASSIFICATION: dict[int, str] = {
-    0: "resource_overload",    1: "deadline_violation",
-    2: "precedence_violation", 3: "availability_conflict",
-    4: "capacity_exceeded",    5: "resource_overload",
-    6: "deadline_violation",   7: "precedence_violation",
-    8: "availability_conflict",9: "capacity_exceeded",
-}
-
-
-def _mock_repair(idx: int) -> str:
-    entry = INSTANCE_BANK[idx]
-    sched = entry.get("optimal_schedule") or entry["instance"].get("proposed_schedule", {})
-    return json.dumps(sched)
-
-
-# ---------------------------------------------------------------------------
 # Per-task agent prompts
 # ---------------------------------------------------------------------------
 
 
 def _agent_feasibility(instance_str: str, instance_idx: int) -> str:
-    if not USE_LLM:
-        return _MOCK_FEASIBILITY.get(instance_idx, "infeasible")
     return _llm(
         "You are a scheduling expert. Determine if the proposed schedule satisfies "
         "all constraints. Reply with ONLY 'feasible' or 'infeasible'. No extra text.",
@@ -137,8 +102,6 @@ def _agent_feasibility(instance_str: str, instance_idx: int) -> str:
 
 
 def _agent_classification(instance_str: str, instance_idx: int) -> str:
-    if not USE_LLM:
-        return _MOCK_CLASSIFICATION.get(instance_idx, "resource_overload")
     return _llm(
         "You are a scheduling expert. Identify the single constraint violation type. "
         "Reply with ONLY one of: resource_overload, deadline_violation, "
@@ -148,8 +111,6 @@ def _agent_classification(instance_str: str, instance_idx: int) -> str:
 
 
 def _agent_repair(instance_str: str, instance_idx: int) -> str:
-    if not USE_LLM:
-        return _mock_repair(instance_idx)
     return _llm(
         'You are a scheduling expert. Repair the infeasible schedule. Return ONLY a '
         'valid JSON object: {"assignments": [{"job_id": "...", "machine_id": "...", '
