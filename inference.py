@@ -35,16 +35,17 @@ from models import Action
 
 API_BASE_URL: str = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
 MODEL_NAME: str = os.getenv("MODEL_NAME", "gpt-4o-mini")
-HF_TOKEN: str = os.getenv("HF_TOKEN")
+# Check API_KEY first (injected by the contest validator Proxy) or fallback to HF_TOKEN
+API_KEY: str = os.getenv("API_KEY") or os.getenv("HF_TOKEN") or ""
 BENCHMARK: str = "scheduling-opt-env"
 SUCCESS_THRESHOLD: float = 0.95
 
-USE_LLM: bool = bool(HF_TOKEN)
+USE_LLM: bool = bool(API_KEY)
 
 if not USE_LLM:
-    print("[WARN] HF_TOKEN not set — using oracle mock responses.", file=sys.stderr, flush=True)
+    print("[WARN] API_KEY/HF_TOKEN not set — using oracle mock responses.", file=sys.stderr, flush=True)
 
-client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN or "no-key")
+client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY or "no-key")
 
 # ---------------------------------------------------------------------------
 # Structured log helpers (exact required format)
